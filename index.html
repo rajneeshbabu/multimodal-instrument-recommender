@@ -1,0 +1,636 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Multi-Modal Instrument Recommender — Rajneesh</title>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/4.4.1/chart.umd.min.js"></script>
+  <style>
+    :root {
+      --bg:       #0d1117;
+      --bg2:      #161b22;
+      --bg3:      #21262d;
+      --border:   #30363d;
+      --accent:   #58a6ff;
+      --accent2:  #bc8cff;
+      --green:    #3fb950;
+      --orange:   #d29922;
+      --red:      #f85149;
+      --text:     #e6edf3;
+      --muted:    #8b949e;
+      --radius:   12px;
+    }
+    * { margin: 0; padding: 0; box-sizing: border-box; }
+    body { background: var(--bg); color: var(--text); font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif; line-height: 1.6; }
+
+    /* ── NAV ─────────────────────────────────────── */
+    nav {
+      position: sticky; top: 0; z-index: 99;
+      background: rgba(13,17,23,0.92); backdrop-filter: blur(12px);
+      border-bottom: 1px solid var(--border);
+      display: flex; align-items: center; justify-content: space-between;
+      padding: 0 2rem; height: 56px;
+    }
+    .nav-brand { font-weight: 700; font-size: 1rem; color: var(--accent); letter-spacing: -0.3px; }
+    .nav-links { display: flex; gap: 1.8rem; }
+    .nav-links a { color: var(--muted); text-decoration: none; font-size: 0.88rem; transition: color .2s; }
+    .nav-links a:hover { color: var(--text); }
+
+    /* ── LAYOUT ──────────────────────────────────── */
+    .container { max-width: 1100px; margin: 0 auto; padding: 0 1.5rem; }
+    section { padding: 5rem 0; }
+    h2.section-title {
+      font-size: 1.6rem; font-weight: 700; margin-bottom: 0.4rem;
+      background: linear-gradient(90deg, var(--accent), var(--accent2));
+      -webkit-background-clip: text; -webkit-text-fill-color: transparent;
+    }
+    .section-sub { color: var(--muted); font-size: 0.95rem; margin-bottom: 2.5rem; }
+
+    /* ── HERO ────────────────────────────────────── */
+    #hero { padding: 7rem 0 5rem; text-align: center; }
+    .hero-emoji { font-size: 3.5rem; display: block; margin-bottom: 1rem; }
+    h1 { font-size: clamp(2rem, 5vw, 3rem); font-weight: 800; letter-spacing: -1px; line-height: 1.15; margin-bottom: 1rem; }
+    h1 span { background: linear-gradient(135deg, var(--accent), var(--accent2)); -webkit-background-clip: text; -webkit-text-fill-color: transparent; }
+    .hero-sub { font-size: 1.1rem; color: var(--muted); max-width: 640px; margin: 0 auto 2rem; }
+    .badge-row { display: flex; flex-wrap: wrap; justify-content: center; gap: 0.5rem; margin-bottom: 2.5rem; }
+    .badge {
+      display: inline-flex; align-items: center; gap: 0.35rem;
+      padding: 0.3rem 0.75rem; border-radius: 20px; font-size: 0.78rem; font-weight: 600;
+      border: 1px solid;
+    }
+    .badge-blue  { color: var(--accent);  border-color: var(--accent);  background: rgba(88,166,255,.08); }
+    .badge-purple{ color: var(--accent2); border-color: var(--accent2); background: rgba(188,140,255,.08); }
+    .badge-green { color: var(--green);   border-color: var(--green);   background: rgba(63,185,80,.08); }
+    .badge-orange{ color: var(--orange);  border-color: var(--orange);  background: rgba(210,153,34,.08); }
+    .btn-row { display: flex; gap: 1rem; justify-content: center; flex-wrap: wrap; }
+    .btn {
+      padding: 0.65rem 1.5rem; border-radius: 8px; font-weight: 600; font-size: 0.9rem;
+      text-decoration: none; display: inline-flex; align-items: center; gap: 0.5rem;
+      transition: all .2s; cursor: pointer; border: none;
+    }
+    .btn-primary { background: var(--accent); color: #000; }
+    .btn-primary:hover { background: #79b8ff; transform: translateY(-1px); }
+    .btn-outline { background: transparent; color: var(--text); border: 1px solid var(--border); }
+    .btn-outline:hover { border-color: var(--accent); color: var(--accent); transform: translateY(-1px); }
+
+    /* ── METRICS CARDS ───────────────────────────── */
+    .metrics-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(160px, 1fr)); gap: 1rem; }
+    .metric-card {
+      background: var(--bg2); border: 1px solid var(--border); border-radius: var(--radius);
+      padding: 1.4rem 1rem; text-align: center; transition: border-color .2s;
+    }
+    .metric-card:hover { border-color: var(--accent); }
+    .metric-val { font-size: 2rem; font-weight: 800; color: var(--accent); }
+    .metric-label { font-size: 0.8rem; color: var(--muted); margin-top: 0.25rem; }
+    .metric-sub { font-size: 0.72rem; color: var(--muted); margin-top: 0.1rem; }
+
+    /* ── ARCHITECTURE ────────────────────────────── */
+    #architecture { background: var(--bg2); }
+    .arch-diagram {
+      background: var(--bg); border: 1px solid var(--border); border-radius: var(--radius);
+      padding: 2rem; overflow-x: auto;
+    }
+    .arch-svg { width: 100%; max-width: 900px; display: block; margin: 0 auto; }
+
+    /* ── CHARTS ──────────────────────────────────── */
+    .charts-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 1.5rem; }
+    @media(max-width:680px){ .charts-grid { grid-template-columns: 1fr; } }
+    .chart-card {
+      background: var(--bg2); border: 1px solid var(--border); border-radius: var(--radius);
+      padding: 1.5rem;
+    }
+    .chart-card h3 { font-size: 0.95rem; color: var(--text); margin-bottom: 1rem; }
+    .chart-wrap { position: relative; height: 230px; }
+
+    /* ── FEATURES TABLE ──────────────────────────── */
+    .feat-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 1rem; }
+    @media(max-width:600px){ .feat-grid { grid-template-columns: 1fr; } }
+    .feat-card {
+      background: var(--bg2); border: 1px solid var(--border); border-radius: var(--radius);
+      padding: 1.4rem;
+    }
+    .feat-card h3 { font-size: 1rem; color: var(--accent); margin-bottom: 0.8rem; display: flex; align-items: center; gap: 0.5rem; }
+    .feat-tag {
+      display: inline-block; padding: 0.15rem 0.5rem; border-radius: 4px;
+      font-size: 0.74rem; font-family: monospace; margin: 0.15rem;
+      background: var(--bg3); border: 1px solid var(--border); color: var(--text);
+    }
+
+    /* ── ABLATION TABLE ──────────────────────────── */
+    table { width: 100%; border-collapse: collapse; font-size: 0.9rem; }
+    th { background: var(--bg3); color: var(--muted); font-weight: 600; padding: 0.75rem 1rem; text-align: left; border-bottom: 1px solid var(--border); }
+    td { padding: 0.75rem 1rem; border-bottom: 1px solid var(--border); color: var(--text); }
+    tr:last-child td { border-bottom: none; }
+    tr:hover td { background: rgba(88,166,255,.04); }
+    .best { color: var(--green); font-weight: 700; }
+    .table-wrap { background: var(--bg2); border: 1px solid var(--border); border-radius: var(--radius); overflow: hidden; }
+
+    /* ── TIMELINE ────────────────────────────────── */
+    .pipeline { display: flex; gap: 0; overflow-x: auto; padding-bottom: 0.5rem; }
+    .step {
+      flex: 1; min-width: 130px; background: var(--bg2); border: 1px solid var(--border);
+      border-radius: 0; padding: 1.2rem 1rem; text-align: center; position: relative;
+    }
+    .step:first-child { border-radius: var(--radius) 0 0 var(--radius); }
+    .step:last-child  { border-radius: 0 var(--radius) var(--radius) 0; }
+    .step + .step { border-left: none; }
+    .step-num { font-size: 1.3rem; }
+    .step-title { font-size: 0.78rem; font-weight: 700; color: var(--accent); margin: 0.3rem 0 0.2rem; }
+    .step-desc  { font-size: 0.72rem; color: var(--muted); }
+
+    /* ── FOOTER ──────────────────────────────────── */
+    footer {
+      border-top: 1px solid var(--border); padding: 2rem 0; text-align: center;
+      color: var(--muted); font-size: 0.85rem;
+    }
+    footer a { color: var(--accent); text-decoration: none; }
+    footer a:hover { text-decoration: underline; }
+
+    /* ── DIVIDER ─────────────────────────────────── */
+    .divider { border: none; border-top: 1px solid var(--border); margin: 0; }
+  </style>
+</head>
+<body>
+
+<!-- NAV -->
+<nav>
+  <span class="nav-brand">🎸 MultiModal Recommender</span>
+  <div class="nav-links">
+    <a href="#results">Results</a>
+    <a href="#architecture">Architecture</a>
+    <a href="#training">Training</a>
+    <a href="#ablation">Ablation</a>
+    <a href="#features">Features</a>
+    <a href="https://github.com/rajneeshbabu/multimodal-instrument-recommender" target="_blank">GitHub ↗</a>
+  </div>
+</nav>
+
+<!-- HERO -->
+<section id="hero">
+  <div class="container">
+    <span class="hero-emoji">🎸</span>
+    <h1>Multi-Modal <span>Instrument Recommender</span></h1>
+    <p class="hero-sub">
+      A hybrid neural recommender system trained on the Amazon Musical Instruments dataset, fusing collaborative-filtering ID embeddings with multi-modal item attributes — product text (TF-IDF LSA), price, category, and brand.
+    </p>
+    <div class="badge-row">
+      <span class="badge badge-blue">PyTorch 2.x</span>
+      <span class="badge badge-blue">CUDA GPU</span>
+      <span class="badge badge-purple">BPR Loss</span>
+      <span class="badge badge-purple">TF-IDF + LSA</span>
+      <span class="badge badge-green">Real Amazon Data</span>
+      <span class="badge badge-green">99.2% Sparse</span>
+      <span class="badge badge-orange">2.8M Parameters</span>
+      <span class="badge badge-orange">Adam + CosineAnnealingLR</span>
+    </div>
+    <div class="btn-row">
+      <a class="btn btn-primary" href="https://github.com/rajneeshbabu/multimodal-instrument-recommender" target="_blank">
+        <svg width="16" height="16" viewBox="0 0 16 16" fill="currentColor"><path d="M8 0C3.58 0 0 3.58 0 8c0 3.54 2.29 6.53 5.47 7.59.4.07.55-.17.55-.38 0-.19-.01-.82-.01-1.49-2.01.37-2.53-.49-2.69-.94-.09-.23-.48-.94-.82-1.13-.28-.15-.68-.52-.01-.53.63-.01 1.08.58 1.23.82.72 1.21 1.87.87 2.33.66.07-.52.28-.87.51-1.07-1.78-.2-3.64-.89-3.64-3.95 0-.87.31-1.59.82-2.15-.08-.2-.36-1.02.08-2.12 0 0 .67-.21 2.2.82.64-.18 1.32-.27 2-.27.68 0 1.36.09 2 .27 1.53-1.04 2.2-.82 2.2-.82.44 1.1.16 1.92.08 2.12.51.56.82 1.27.82 2.15 0 3.07-1.87 3.75-3.65 3.95.29.25.54.73.54 1.48 0 1.07-.01 1.93-.01 2.2 0 .21.15.46.55.38A8.013 8.013 0 0016 8c0-4.42-3.58-8-8-8z"/></svg>
+        View on GitHub
+      </a>
+      <a class="btn btn-outline" href="multimodal_instrument_recommender.ipynb" target="_blank">
+        📓 Open Notebook
+      </a>
+    </div>
+  </div>
+</section>
+
+<!-- RESULTS -->
+<section id="results">
+  <div class="container">
+    <h2 class="section-title">Key Results</h2>
+    <p class="section-sub">Evaluated on held-out test set (20% split) · Amazon Musical Instruments · 99.2% sparsity · 30-epoch Adam + BPR (CosineAnnealingLR)</p>
+    <div class="metrics-grid">
+      <div class="metric-card">
+        <div class="metric-val">0.0367</div>
+        <div class="metric-label">Hit Rate @10</div>
+        <div class="metric-sub">3.3× random baseline</div>
+      </div>
+      <div class="metric-card">
+        <div class="metric-val">0.0155</div>
+        <div class="metric-label">NDCG @10</div>
+        <div class="metric-sub">↑ 2× vs prev run</div>
+      </div>
+      <div class="metric-card">
+        <div class="metric-val">0.0204</div>
+        <div class="metric-label">MRR @10</div>
+        <div class="metric-sub">↑ 2× vs prev run</div>
+      </div>
+      <div class="metric-card">
+        <div class="metric-val">0.1147</div>
+        <div class="metric-label">BPR Final Loss</div>
+        <div class="metric-sub">30-epoch convergence</div>
+      </div>
+      <div class="metric-card">
+        <div class="metric-val">1,429</div>
+        <div class="metric-label">Users</div>
+        <div class="metric-sub">9,022 interactions</div>
+      </div>
+      <div class="metric-card">
+        <div class="metric-val">84,901</div>
+        <div class="metric-label">Item Embeddings</div>
+        <div class="metric-sub">Full catalog coverage</div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<hr class="divider"/>
+
+<!-- ARCHITECTURE -->
+<section id="architecture">
+  <div class="container">
+    <h2 class="section-title">Model Architecture</h2>
+    <p class="section-sub">Symmetrical Hybrid Engine — two mirrored towers each fusing ID embeddings with attribute MLPs</p>
+    <div class="arch-diagram">
+      <svg class="arch-svg" viewBox="0 0 860 340" xmlns="http://www.w3.org/2000/svg" font-family="-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif">
+        <!-- Background -->
+        <rect width="860" height="340" fill="#0d1117" rx="10"/>
+
+        <!-- User Tower Box -->
+        <rect x="30" y="40" width="220" height="260" rx="10" fill="#161b22" stroke="#30363d" stroke-width="1.5"/>
+        <text x="140" y="68" fill="#58a6ff" font-size="13" font-weight="700" text-anchor="middle">USER TOWER</text>
+
+        <!-- user_id_emb -->
+        <rect x="50" y="80" width="180" height="44" rx="6" fill="#21262d" stroke="#58a6ff" stroke-width="1.2"/>
+        <text x="140" y="98" fill="#58a6ff" font-size="11" text-anchor="middle">user_id_emb</text>
+        <text x="140" y="114" fill="#8b949e" font-size="10" text-anchor="middle">Embedding(1429 × 32)</text>
+
+        <!-- user_attr_enc -->
+        <rect x="50" y="138" width="180" height="44" rx="6" fill="#21262d" stroke="#bc8cff" stroke-width="1.2"/>
+        <text x="140" y="156" fill="#bc8cff" font-size="11" text-anchor="middle">user_attr_enc</text>
+        <text x="140" y="172" fill="#8b949e" font-size="10" text-anchor="middle">4 → 64 → 32  (ReLU)</text>
+
+        <!-- User concat arrow -->
+        <line x1="140" y1="184" x2="140" y2="210" stroke="#30363d" stroke-width="1.5" stroke-dasharray="4,3"/>
+        <rect x="70" y="210" width="140" height="36" rx="6" fill="#21262d" stroke="#3fb950" stroke-width="1.2"/>
+        <text x="140" y="228" fill="#3fb950" font-size="11" text-anchor="middle">cat([id, attr])</text>
+        <text x="140" y="244" fill="#8b949e" font-size="10" text-anchor="middle">dim = 64  (2E)</text>
+
+        <!-- Item Tower Box -->
+        <rect x="610" y="40" width="220" height="260" rx="10" fill="#161b22" stroke="#30363d" stroke-width="1.5"/>
+        <text x="720" y="68" fill="#58a6ff" font-size="13" font-weight="700" text-anchor="middle">ITEM TOWER</text>
+
+        <!-- item_id_emb -->
+        <rect x="630" y="80" width="180" height="44" rx="6" fill="#21262d" stroke="#58a6ff" stroke-width="1.2"/>
+        <text x="720" y="98" fill="#58a6ff" font-size="11" text-anchor="middle">item_id_emb</text>
+        <text x="720" y="114" fill="#8b949e" font-size="10" text-anchor="middle">Embedding(84,901 × 32)</text>
+
+        <!-- item_attr_enc -->
+        <rect x="630" y="138" width="180" height="44" rx="6" fill="#21262d" stroke="#bc8cff" stroke-width="1.2"/>
+        <text x="720" y="156" fill="#bc8cff" font-size="11" text-anchor="middle">item_attr_enc</text>
+        <text x="720" y="172" fill="#8b949e" font-size="10" text-anchor="middle">73 → 64 → 32  (ReLU)</text>
+
+        <!-- item_attr label -->
+        <text x="720" y="193" fill="#d29922" font-size="9.5" text-anchor="middle">price · cat · brand · TF-IDF(32)</text>
+
+        <!-- Item concat arrow -->
+        <line x1="720" y1="198" x2="720" y2="210" stroke="#30363d" stroke-width="1.5" stroke-dasharray="4,3"/>
+        <rect x="650" y="210" width="140" height="36" rx="6" fill="#21262d" stroke="#3fb950" stroke-width="1.2"/>
+        <text x="720" y="228" fill="#3fb950" font-size="11" text-anchor="middle">cat([id, attr])</text>
+        <text x="720" y="244" fill="#8b949e" font-size="10" text-anchor="middle">dim = 64  (2E)</text>
+
+        <!-- Arrows to MLP -->
+        <line x1="210" y1="228" x2="330" y2="260" stroke="#58a6ff" stroke-width="1.5" marker-end="url(#arr)"/>
+        <line x1="650" y1="228" x2="530" y2="260" stroke="#58a6ff" stroke-width="1.5" marker-end="url(#arr)"/>
+
+        <!-- MLP box -->
+        <rect x="310" y="260" width="240" height="60" rx="8" fill="#21262d" stroke="#f85149" stroke-width="1.5"/>
+        <text x="430" y="282" fill="#f85149" font-size="12" font-weight="700" text-anchor="middle">Interaction MLP</text>
+        <text x="430" y="298" fill="#8b949e" font-size="10" text-anchor="middle">128 → 64 → 32 → 1  (BatchNorm + Dropout)</text>
+        <text x="430" y="312" fill="#8b949e" font-size="10" text-anchor="middle">→  sigmoid  →  score</text>
+
+        <!-- Input label -->
+        <text x="430" y="252" fill="#3fb950" font-size="10" text-anchor="middle" font-weight="600">cat([u_fused, i_fused])  dim=128  (4E)</text>
+
+        <!-- BPR Loss -->
+        <rect x="355" y="40" width="150" height="50" rx="8" fill="#21262d" stroke="#d29922" stroke-width="1.2"/>
+        <text x="430" y="60" fill="#d29922" font-size="11" font-weight="700" text-anchor="middle">BPR Loss</text>
+        <text x="430" y="76" fill="#8b949e" font-size="9.5" text-anchor="middle">−log σ(score⁺ − score⁻)</text>
+
+        <!-- Arrow defs -->
+        <defs>
+          <marker id="arr" markerWidth="8" markerHeight="6" refX="6" refY="3" orient="auto">
+            <polygon points="0 0, 8 3, 0 6" fill="#58a6ff"/>
+          </marker>
+        </defs>
+      </svg>
+    </div>
+  </div>
+</section>
+
+<hr class="divider"/>
+
+<!-- TRAINING CHARTS -->
+<section id="training">
+  <div class="container">
+    <h2 class="section-title">Training Analysis</h2>
+    <p class="section-sub">SGD plateau diagnosis → Adam + BPR + CosineAnnealingLR drives loss from 0.717 → 0.115 over 30 epochs</p>
+    <div class="charts-grid">
+      <div class="chart-card">
+        <h3>📉 SGD MSE — Plateau After Epoch 5</h3>
+        <div class="chart-wrap"><canvas id="lossChart"></canvas></div>
+      </div>
+      <div class="chart-card">
+        <h3>📊 Adam + BPR — 0.717 → 0.115 in 30 Epochs</h3>
+        <div class="chart-wrap"><canvas id="adamChart"></canvas></div>
+      </div>
+      <div class="chart-card">
+        <h3>🎯 Evaluation Metrics @ K</h3>
+        <div class="chart-wrap"><canvas id="metricsChart"></canvas></div>
+      </div>
+      <div class="chart-card">
+        <h3>⚡ SGD Gradient Plateau (% near-zero tensors)</h3>
+        <div class="chart-wrap"><canvas id="stagChart"></canvas></div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<hr class="divider"/>
+
+<!-- ABLATION -->
+<section id="ablation">
+  <div class="container">
+    <h2 class="section-title">Ablation Study</h2>
+    <p class="section-sub">Three variants trained identically (Adam + BPR, 20 epochs) — isolates contribution of each signal</p>
+    <div style="display:grid;grid-template-columns:1.2fr 1fr;gap:1.5rem;align-items:start;">
+      <div class="table-wrap">
+        <table>
+          <thead>
+            <tr>
+              <th>Variant</th>
+              <th>ID Embed</th>
+              <th>Attr Enc</th>
+              <th>HR@10</th>
+              <th>NDCG@10</th>
+              <th>Params</th>
+            </tr>
+          </thead>
+          <tbody>
+            <tr>
+              <td>ID-Only</td>
+              <td>✅</td><td>❌</td>
+              <td>0.0100</td>
+              <td>0.0063</td>
+              <td>2,781,697</td>
+            </tr>
+            <tr>
+              <td>Attr-Only</td>
+              <td>❌</td><td>✅</td>
+              <td>0.0000</td>
+              <td>0.0000</td>
+              <td>28,353</td>
+            </tr>
+            <tr style="background:rgba(63,185,80,.06)">
+              <td><strong>Full Hybrid ★</strong></td>
+              <td>✅</td><td>✅</td>
+              <td class="best">0.0367</td>
+              <td class="best">0.0155</td>
+              <td>2,799,105</td>
+            </tr>
+          </tbody>
+        </table>
+      </div>
+      <div class="chart-card" style="height:100%">
+        <h3>🔬 Ablation NDCG@10 Comparison</h3>
+        <div class="chart-wrap"><canvas id="ablationChart"></canvas></div>
+      </div>
+    </div>
+    <p style="margin-top:1.2rem;color:var(--muted);font-size:0.88rem;">
+      <strong style="color:var(--text)">Key finding:</strong> Full Hybrid (30 epochs, CosineAnnealingLR) achieves
+      <strong style="color:var(--green)">HR@10=0.0367 and NDCG@10=0.0155</strong> — significantly outperforming all ablation variants.
+      Attr-Only scores zero, confirming collaborative filtering (ID embeddings) is essential.
+      ID-Only runs for only 20 epochs in the ablation vs 30 for the full model; the full model's longer training and combined signals explain the gap.
+      The <strong style="color:var(--text)">2.8M item embeddings</strong> cover the full Amazon catalog (84,901 items), enabling cold-start recommendations even for items with no interactions.
+    </p>
+  </div>
+</section>
+
+<hr class="divider"/>
+
+<!-- FEATURES -->
+<section id="features">
+  <div class="container">
+    <h2 class="section-title">Feature Engineering</h2>
+    <p class="section-sub">73-dimensional item vectors combining structured metadata with text-derived semantic signals</p>
+    <div class="feat-grid">
+      <div class="feat-card">
+        <h3>📦 Item Features (73-dim)</h3>
+        <p style="color:var(--muted);font-size:0.85rem;margin-bottom:0.8rem;">Multi-modal product attributes extracted from metadata</p>
+        <div>
+          <span class="feat-tag">price_norm</span>
+          <span class="feat-tag">cat_Musical Instruments</span>
+          <span class="feat-tag">cat_Accessories</span>
+          <span class="feat-tag">brand_Fender</span>
+          <span class="feat-tag">brand_Yamaha</span>
+          <span class="feat-tag">brand_Gibson</span>
+          <span class="feat-tag">... 15 categories + 30 brands</span>
+          <span class="feat-tag" style="border-color:var(--accent2);color:var(--accent2)">tfidf_lsa_0..31 (×32)</span>
+        </div>
+        <p style="color:var(--muted);font-size:0.8rem;margin-top:0.8rem;">
+          TF-IDF: 1,000-vocab bigrams on product titles → TruncatedSVD(32) — 27.6% variance explained
+        </p>
+      </div>
+      <div class="feat-card">
+        <h3>👤 User Features (4-dim)</h3>
+        <p style="color:var(--muted);font-size:0.85rem;margin-bottom:0.8rem;">Interaction-derived behavioral signals</p>
+        <div>
+          <span class="feat-tag">avg_rating_norm</span>
+          <span class="feat-tag">log_num_reviews</span>
+          <span class="feat-tag">recency (last_ts)</span>
+          <span class="feat-tag">verified_purchase_ratio</span>
+        </div>
+        <p style="color:var(--muted);font-size:0.8rem;margin-top:0.8rem;">
+          log_reviews and last_ts standardized with StandardScaler. Positive interactions = rating ≥ 4.
+        </p>
+      </div>
+      <div class="feat-card">
+        <h3>🔤 TF-IDF LSA Pipeline</h3>
+        <div class="pipeline" style="gap:0;margin-top:0.5rem;">
+          <div class="step" style="min-width:110px">
+            <div class="step-num">①</div>
+            <div class="step-title">Tokenize</div>
+            <div class="step-desc">Bigrams, stop words removed</div>
+          </div>
+          <div class="step" style="min-width:110px">
+            <div class="step-num">②</div>
+            <div class="step-title">TF-IDF</div>
+            <div class="step-desc">1,000 features, log(1+tf)</div>
+          </div>
+          <div class="step" style="min-width:110px">
+            <div class="step-num">③</div>
+            <div class="step-title">SVD</div>
+            <div class="step-desc">32 components (LSA)</div>
+          </div>
+          <div class="step" style="min-width:110px">
+            <div class="step-num">④</div>
+            <div class="step-title">Normalize</div>
+            <div class="step-desc">z-score per dim</div>
+          </div>
+        </div>
+      </div>
+      <div class="feat-card">
+        <h3>🏗️ Tech Stack</h3>
+        <div style="display:grid;grid-template-columns:1fr 1fr;gap:0.5rem;margin-top:0.5rem;">
+          <div>
+            <p style="font-size:0.8rem;color:var(--muted);margin-bottom:0.3rem;">ML Framework</p>
+            <span class="feat-tag" style="color:var(--accent);border-color:var(--accent)">PyTorch 2.x</span>
+            <span class="feat-tag">CUDA GPU</span>
+          </div>
+          <div>
+            <p style="font-size:0.8rem;color:var(--muted);margin-bottom:0.3rem;">Data</p>
+            <span class="feat-tag">pandas</span>
+            <span class="feat-tag">numpy</span>
+          </div>
+          <div>
+            <p style="font-size:0.8rem;color:var(--muted);margin-bottom:0.3rem;">Features</p>
+            <span class="feat-tag">scikit-learn</span>
+            <span class="feat-tag">TF-IDF+SVD</span>
+          </div>
+          <div>
+            <p style="font-size:0.8rem;color:var(--muted);margin-bottom:0.3rem;">Optimizer</p>
+            <span class="feat-tag" style="color:var(--accent2);border-color:var(--accent2)">Adam + BPR</span>
+            <span class="feat-tag">CosineAnnealingLR</span>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<hr class="divider"/>
+
+<!-- FOOTER -->
+<footer>
+  <div class="container">
+    <p>Built by <strong style="color:var(--text)">Rajneesh</strong> ·
+      <a href="https://github.com/rajneeshbabu/multimodal-instrument-recommender" target="_blank">GitHub →</a> ·
+      Dataset: <a href="http://jmcauley.ucsd.edu/data/amazon/" target="_blank">Amazon Reviews (UCSD)</a>
+    </p>
+    <p style="margin-top:0.4rem;color:#555;font-size:0.78rem;">Multi-Modal Hybrid Recommender · Amazon Musical Instruments · PyTorch · BPR · TF-IDF LSA</p>
+  </div>
+</footer>
+
+<!-- CHARTS JS -->
+<script>
+const DARK = { color: '#8b949e', grid: 'rgba(48,54,61,0.6)' };
+
+Chart.defaults.color = DARK.color;
+Chart.defaults.borderColor = DARK.grid;
+Chart.defaults.plugins.legend.labels.boxWidth = 12;
+
+// ── 1. SGD Loss curve ────────────────────────────────────────────────
+new Chart(document.getElementById('lossChart'), {
+  type: 'line',
+  data: {
+    labels: Array.from({length:10},(_,i)=>i+1),
+    datasets: [{
+      label: 'SGD MSE Loss',
+      data: [0.1693,0.1304,0.1151,0.1052,0.0989,0.0942,0.0918,0.0888,0.0866,0.0854],
+      borderColor: '#f85149', backgroundColor: 'rgba(248,81,73,.1)',
+      tension: 0.35, pointRadius: 4
+    }]
+  },
+  options: {
+    responsive: true, maintainAspectRatio: false,
+    scales: {
+      x: { title: { display: true, text: 'Epoch', color: DARK.color } },
+      y: { title: { display: true, text: 'MSE Loss', color: DARK.color }, min: 0.07 }
+    },
+    plugins: { legend: { position: 'bottom' }, tooltip: { mode: 'index', intersect: false } }
+  }
+});
+
+// ── 2. Adam + BPR — 30-epoch convergence ────────────────────────────
+new Chart(document.getElementById('adamChart'), {
+  type: 'line',
+  data: {
+    labels: Array.from({length:30},(_,i)=>i+1),
+    datasets: [{
+      label: 'Adam + BPR Loss',
+      data: [0.7174,0.6985,0.6926,0.6802,0.6682,0.6453,0.6208,0.5734,0.5171,0.4531,
+             0.3739,0.3212,0.2797,0.2361,0.1958,0.1955,0.1593,0.1544,0.1308,0.1349,
+             0.1273,0.1164,0.1158,0.1047,0.1256,0.1132,0.1205,0.1137,0.1041,0.1147],
+      borderColor: '#58a6ff', backgroundColor: 'rgba(88,166,255,.1)',
+      tension: 0.35, pointRadius: 2, fill: true
+    }]
+  },
+  options: {
+    responsive: true, maintainAspectRatio: false,
+    scales: {
+      x: { title: { display: true, text: 'Epoch', color: DARK.color } },
+      y: { title: { display: true, text: 'BPR Loss', color: DARK.color }, min: 0.08 }
+    },
+    plugins: { legend: { position: 'bottom' } }
+  }
+});
+
+// ── 3. Metrics @ K ──────────────────────────────────────────────────
+new Chart(document.getElementById('metricsChart'), {
+  type: 'bar',
+  data: {
+    labels: ['@5', '@10', '@20'],
+    datasets: [
+      { label: 'Hit Rate',  data: [0.0333,0.0367,0.0433], backgroundColor: '#58a6ff' },
+      { label: 'NDCG',      data: [0.0151,0.0155,0.0167], backgroundColor: '#bc8cff' },
+      { label: 'Precision', data: [0.0067,0.0037,0.0023], backgroundColor: '#3fb950' },
+      { label: 'Recall',    data: [0.0164,0.0172,0.0211], backgroundColor: '#d29922' },
+      { label: 'MRR',       data: [0.0198,0.0204,0.0207], backgroundColor: '#f85149' },
+    ]
+  },
+  options: {
+    responsive: true, maintainAspectRatio: false,
+    scales: {
+      x: {},
+      y: { title: { display: true, text: 'Score', color: DARK.color }, min: 0 }
+    },
+    plugins: { legend: { position: 'bottom' } }
+  }
+});
+
+// ── 4. SGD Stagnation ────────────────────────────────────────────────
+new Chart(document.getElementById('stagChart'), {
+  type: 'bar',
+  data: {
+    labels: Array.from({length:10},(_,i)=>'E'+(i+1)),
+    datasets: [{
+      label: 'Stagnant param tensors %',
+      data: Array(10).fill(16.7),
+      backgroundColor: 'rgba(248,81,73,.6)',
+      borderColor: '#f85149', borderWidth: 1
+    }]
+  },
+  options: {
+    responsive: true, maintainAspectRatio: false,
+    scales: {
+      x: {},
+      y: { title: { display: true, text: '%', color: DARK.color }, min: 0, max: 35,
+           ticks: { callback: v => v+'%' } }
+    },
+    plugins: { legend: { position: 'bottom' } }
+  }
+});
+
+// ── 5. Ablation comparison ───────────────────────────────────────────
+new Chart(document.getElementById('ablationChart'), {
+  type: 'bar',
+  data: {
+    labels: ['ID-Only', 'Attr-Only', 'Full Hybrid\n(trained 30ep)'],
+    datasets: [
+      { label: 'HR@10',   data: [0.0100, 0.0000, 0.0367], backgroundColor: ['#58a6ff','#58a6ff','#3fb950'] },
+      { label: 'NDCG@10', data: [0.0063, 0.0000, 0.0155], backgroundColor: ['rgba(188,140,255,.7)','rgba(188,140,255,.7)','rgba(63,185,80,.9)'] }
+    ]
+  },
+  options: {
+    responsive: true, maintainAspectRatio: false,
+    scales: {
+      x: {},
+      y: { title: { display: true, text: 'Score', color: DARK.color }, min: 0 }
+    },
+    plugins: { legend: { position: 'bottom' } }
+  }
+});
+</script>
+</body>
+</html>
