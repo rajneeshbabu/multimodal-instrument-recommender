@@ -4,6 +4,9 @@
 [![PyTorch](https://img.shields.io/badge/PyTorch-2.x-ee4c2c?logo=pytorch)](https://pytorch.org)
 [![CUDA](https://img.shields.io/badge/CUDA-GPU-76b900?logo=nvidia)](https://developer.nvidia.com/cuda-toolkit)
 [![License: MIT](https://img.shields.io/badge/License-MIT-green)](LICENSE)
+[![Project Page](https://img.shields.io/badge/Project%20Page-GitHub%20Pages-222?logo=github)](https://rajneeshbabu.github.io/multimodal-instrument-recommender/)
+
+🌐 **[View Project Page →](https://rajneeshbabu.github.io/multimodal-instrument-recommender/)**
 
 A hybrid neural recommender system trained on the **Amazon Musical Instruments** dataset (~10K real reviews), fusing collaborative-filtering ID embeddings with multi-modal item attributes — product text (TF-IDF + LSA), price, category, and brand.
 
