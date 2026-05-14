@@ -10,8 +10,6 @@
 
 A hybrid neural recommender system trained on the **Amazon Musical Instruments** dataset (~10K real reviews), fusing collaborative-filtering ID embeddings with multi-modal item attributes — product text (TF-IDF + LSA), price, category, and brand.
 
-**[🌐 Live Portfolio Page](https://rajneeshbabu.github.io/multimodal-instrument-recommender)**
-
 ---
 
 ## Architecture
